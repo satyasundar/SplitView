@@ -33,20 +33,32 @@ chrome.action.onClicked.addListener(() => {
   }
 });
 
+function calculateGridSize(numWindows) {
+  const cols = Math.ceil(Math.sqrt(numWindows));
+  const rows = Math.ceil(numWindows / cols);
+  return { rows, cols };
+}
+
 function openSplitView() {
   chrome.system.display.getInfo((displays) => {
     const primaryDisplay = displays[0];
     const screenWidth = primaryDisplay.workArea.width;
     const screenHeight = primaryDisplay.workArea.height;
-    const windowWidth = Math.floor(screenWidth / 2);
-    const windowHeight = screenHeight;
+    
+    const { rows, cols } = calculateGridSize(selectedTabs.length);
+    const windowWidth = Math.floor(screenWidth / cols);
+    const windowHeight = Math.floor(screenHeight / rows);
 
     console.log('Creating windows for tabs:', selectedTabs);
+    console.log(`Grid layout: ${rows} rows x ${cols} columns`);
     
-    // Create windows side by side
+    // Create windows in a grid
     selectedTabs.forEach((tab, index) => {
-      const left = index % 2 === 0 ? 0 : windowWidth;
-      const top = 0;
+      const col = index % cols;
+      const row = Math.floor(index / cols);
+      
+      const left = col * windowWidth;
+      const top = row * windowHeight;
 
       chrome.windows.create({
         url: tab.url,
@@ -57,7 +69,7 @@ function openSplitView() {
         focused: index === 0,
         type: 'normal'
       }, (window) => {
-        console.log(`Window ${index} created:`, window);
+        console.log(`Window ${index} created at position (${left},${top}):`, window);
       });
     });
 
